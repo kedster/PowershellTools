@@ -51,7 +51,7 @@ $subscription = Register-ObjectEvent -InputObject $fsw -EventName "Changed" -Act
                 # Optional: Send email, write to event log, alert Splunk, etc.
             }
             elseif ($line -match "SUCCESS") {
-                Write-Host "✅ SUCCESS detected: $line"
+                Write-Host "SUCCESS detected: $line"
             }
         }
 
