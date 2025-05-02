@@ -1,0 +1,78 @@
+# =======================
+# PowerShell: Real-Time Log File Watcher
+# =======================
+
+# Configuration
+$logFilePath = "C:\Logs\deployment.log"
+$logDir = Split-Path $logFilePath
+$logFileName = Split-Path $logFilePath -Leaf
+
+# Validate directory and log file
+if (-not (Test-Path $logDir)) {
+    Write-Host "Log directory does not exist. Creating..."
+    New-Item -Path $logDir -ItemType Directory | Out-Null
+}
+
+if (-not (Test-Path $logFilePath)) {
+    Write-Host "Log file does not exist. Creating..."
+    New-Item -Path $logFilePath -ItemType File | Out-Null
+}
+
+
+# Create FileSystemWatcher
+$fsw = New-Object System.IO.FileSystemWatcher
+$fsw.Path = $logDir
+$fsw.Filter = $logFileName
+$fsw.IncludeSubdirectories = $false
+$fsw.EnableRaisingEvents = $true
+$fsw.NotifyFilter = [System.IO.NotifyFilters]'LastWrite'
+
+# Maintain the last read position
+$global:lastPosition = 0
+
+# Register the Changed event
+$subscription = Register-ObjectEvent -InputObject $fsw -EventName "Changed" -Action {
+    try {
+        $filePath = $Event.SourceEventArgs.FullPath
+        $changeType = $Event.SourceEventArgs.ChangeType
+        Write-Host "[$changeType] Detected change at $filePath"
+
+        # Open the file and read new lines since lastPosition
+        $stream = [System.IO.File]::Open($filePath, 'Open', 'Read', 'ReadWrite')
+        $reader = New-Object System.IO.StreamReader($stream)
+        $reader.BaseStream.Seek($global:lastPosition, [System.IO.SeekOrigin]::Begin) | Out-Null
+
+        while (!$reader.EndOfStream) {
+            $line = $reader.ReadLine()
+            
+            # === CUSTOM LOGIC: Adjust this block ===
+            if ($line -match "ERROR") {
+                Write-Warning "ERROR detected: $line"
+                # Optional: Send email, write to event log, alert Splunk, etc.
+            }
+            elseif ($line -match "SUCCESS") {
+                Write-Host "✅ SUCCESS detected: $line"
+            }
+        }
+
+        $global:lastPosition = $reader.BaseStream.Position
+        $reader.Close()
+        $stream.Close()
+    }
+    catch {
+        Write-Error "Exception in event handler: $_"
+    }
+}
+
+# Output for user
+Write-Host "Watching $logFilePath for changes. Press Ctrl+C to exit."
+Write-Host "Subscription ID: $($subscription.Id)"
+
+# Keep the session alive
+while ($true) {
+    Start-Sleep -Seconds 5
+}
+
+# Cleanup (if script ends)
+#Unregister-Event -SourceIdentifier $subscription.Name
+#$fsw.Dispose()
