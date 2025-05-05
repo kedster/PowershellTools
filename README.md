@@ -1,3 +1,6 @@
+# PowershellTools
+Tools I have found useful, in PS1
+
 ## Overview
 
 This PowerShell script uses `System.IO.FileSystemWatcher` to **monitor a log file in real time**. When new lines are written to the file, it evaluates them for specific patterns (e.g., `"ERROR"` or `"SUCCESS"`) and can trigger custom actions such as alerting or logging.
@@ -24,8 +27,7 @@ $logFilePath = "C:\Logs\deployment.log"
 ```
 ______________________________________________________________________________________________________________________________________________________________________
 
-# PowershellTools
-Tools I have found useful, in PS1
+
 # Windows 7 to Windows 10 Migration Script (2013–2017)
 
 ## Purpose
